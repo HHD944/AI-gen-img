@@ -38,11 +38,9 @@ const SignUpPage = () => {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen grid lg:grid-cols-2">
-        {/* left side */}
+      <div className="min-h-screen grid ">
         <div className="flex flex-col justify-center items-center p-6 sm:p-12">
           <div className="w-full max-w-md space-y-8">
-            {/* LOGO */}
             <div className="text-center mb-8">
               <div className="flex flex-col items-center gap-2 group">
                 <div className="size-12 rounded-xl bg-info/10 flex items-center justify-center group-hover:bg-info/20 transition-colors">
@@ -54,8 +52,6 @@ const SignUpPage = () => {
                 </p>
               </div>
             </div>
-            {/* FORM */}
-            {/* // ...existing code... */}
             <form
               className="space-y-3 bg-base-100 p-6 rounded-2xl shadow-xl"
               onSubmit={handleSubmit}

@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import SidebarSkeleton from "./skeletons/SidebarSkeleton";
 import { useChatStore } from "../store/useChatStore";
 import { Users } from "lucide-react";
+import ChatHistory from "./ChatHistory.jsx";
 
 function Sidebar() {
   const { getUsers, users, isUsersLoading } = useChatStore();
@@ -13,12 +14,10 @@ function Sidebar() {
     return <SidebarSkeleton />;
   }
   return (
-    <aside className="h-full w-20 lg:w-72 border-r border-base-300 flex flex-col transition-all duration-200 ">
-      <div className="border-b border-base-300 w-full p-5">
-        <div className="flex items-center gap-2">
-          <Users className="size-6 text-info" />
-          <span className="font-medium hidden lg:block">Contacts</span>
-        </div>
+    <aside className="w-80 border-r">
+      <div className="p-4">
+        <h3 className="font-semibold mb-2">Chats</h3>
+        <ChatHistory />
       </div>
     </aside>
   );

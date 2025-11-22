@@ -51,9 +51,10 @@ const HomePage = () => {
 
   return (
     <div className="h-screen bg-base-200">
-      <div className="flex items-center justify-center pt-20 px-4">
-        <div className="bg-base-100 rounded-lg shadow-cl w-full max-w-6xl h-[calc(100vh-8rem)]">
-          <div className="flex h-full rounded-lg overflow-hidden">
+      {/* fixed panel: căn giữa theo ngang, cách top bằng 5rem (pt-20 trước đó) */}
+      <div className="fixed left-1/2 top-20 z-10 w-full max-w-6xl transform -translate-x-1/2 h-[calc(100vh-8rem)] px-4">
+        <div className="bg-base-100 rounded-lg shadow-cl h-full overflow-hidden">
+          <div className="flex h-full">
             <Sidebar />
             {!selectedUser ? <NoChatSelected /> : <ChatContainer />}
           </div>
