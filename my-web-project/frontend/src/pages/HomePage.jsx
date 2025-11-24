@@ -3,6 +3,8 @@ import Sidebar from "../components/Sidebar.jsx";
 import ChatContainer from "../components/ChatContainer.jsx";
 import NoChatSelected from "../components/NoChatSelected.jsx";
 import { useAuthStore } from "../store/userAuthStore.js";
+import AgentsSidebar from "../components/AgentsSidebar.jsx";
+
 import {
   Smile,
   Paperclip,
@@ -31,6 +33,8 @@ const initialMessages = [
 
 const HomePage = () => {
   const { selectedUser, setSelectedUser } = useChatStore();
+  const { selectedAgent, setSelectedAgent } = useChatStore();
+
   const [selectedFriend, setSelectedFriend] = useState(friendsList[0]);
   const [messages, setMessages] = useState(initialMessages);
   const [input, setInput] = useState("");
@@ -57,6 +61,7 @@ const HomePage = () => {
           <div className="flex h-full">
             <Sidebar />
             {!selectedUser ? <NoChatSelected /> : <ChatContainer />}
+            <AgentsSidebar />
           </div>
         </div>
       </div>
