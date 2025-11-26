@@ -1,13 +1,24 @@
 import React, { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import { useChatStore } from "../store/useChatStore";
+import { useAgentsStore } from "../store/useAgentsStore";
 import axios from "axios";
 
 const SOCKET_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
 const socket = io(SOCKET_URL, { transports: ["websocket"], autoConnect: true });
 
 export default function ChatContainer({ entity, entityType = "user" }) {
-  const { selectedUser, messages, setMessages, selectChat } = useChatStore();
+  const isAgent = entityType === "agent";
+
+  const chatMessages = useChatStore((s) => s.messages);
+  const setChatMessages = useChatStore((s) => s.setMessages);
+  const agentMessages = useAgentsStore((s) => s.messages);
+  const setAgentMessages = useAgentsStore((s) => s.setMessages);
+  const appendAgentMsg = useAgentsStore((s) => s.appendMessageToAgent);
+
+  const messages = isAgent ? agentMessages : chatMessages;
+  const setMessages = isAgent ? setAgentMessages : setChatMessages;
+
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [sending, setSending] = useState(false);
@@ -15,25 +26,24 @@ export default function ChatContainer({ entity, entityType = "user" }) {
   const endRef = useRef(null);
 
   useEffect(() => {
-    // join room per chat if you use rooms (optional)
-    if (selectedUser) {
-      socket.emit("join", { room: selectedUser.id });
-    }
-    // listen incoming messages
+    if (!entity) return;
+    socket.emit("join", { room: entity.id });
     const onMsg = (msg) => {
-      setMessages((prev) => [...prev, msg]);
+      if (msg.conversationId && msg.conversationId !== entity.id) return;
+      setMessages([...(messages || []), msg]);
     };
     const onTyping = ({ userId, typing }) => {
-      if (selectedUser && userId === selectedUser.id) setIsTyping(typing);
+      if (userId === entity.id) setIsTyping(typing);
     };
     socket.on("chat message", onMsg);
     socket.on("typing", onTyping);
     return () => {
       socket.off("chat message", onMsg);
       socket.off("typing", onTyping);
-      if (selectedUser) socket.emit("leave", { room: selectedUser.id });
+      socket.emit("leave", { room: entity.id });
     };
-  }, [selectedUser]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entity?.id]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -44,26 +54,30 @@ export default function ChatContainer({ entity, entityType = "user" }) {
     if (!input.trim()) return;
     const msgObj = {
       id: `local_${Date.now()}`,
-      conversationId: selectedUser?.id || null,
+      conversationId: entity?.id || null,
       author: "me",
       text: input.trim(),
       createdAt: new Date().toISOString(),
     };
-    // optimistic UI
-    setMessages((prev) => [...prev, msgObj]);
+
+    if (isAgent) appendAgentMsg(msgObj);
+    else setMessages([...(messages || []), msgObj]);
+
     setInput("");
-    socket.emit("chat message", msgObj); // server should broadcast / persist
-    // Optionally persist via REST
-    try {
-      setSending(true);
-      await axios.post("/api/messages/send", {
-        conversationId: msgObj.conversationId,
-        text: msgObj.text,
-      });
-    } catch (err) {
-      console.error("send error", err);
-    } finally {
-      setSending(false);
+    socket.emit("chat message", msgObj);
+
+    if (!isAgent) {
+      try {
+        setSending(true);
+        await axios.post("/api/messages/send", {
+          conversationId: msgObj.conversationId,
+          text: msgObj.text,
+        });
+      } catch (err) {
+        console.error("send error", err);
+      } finally {
+        setSending(false);
+      }
     }
   };
 
@@ -78,12 +92,13 @@ export default function ChatContainer({ entity, entityType = "user" }) {
       const asset = r.data;
       const msgObj = {
         id: `local_${Date.now()}`,
-        conversationId: selectedUser?.id || null,
+        conversationId: entity?.id || null,
         author: "me",
         image: asset.url || asset.path,
         createdAt: new Date().toISOString(),
       };
-      setMessages((prev) => [...prev, msgObj]);
+      if (isAgent) appendAgentMsg(msgObj);
+      else setMessages([...(messages || []), msgObj]);
       socket.emit("chat message", msgObj);
     } catch (err) {
       console.error("upload failed", err);
@@ -97,15 +112,21 @@ export default function ChatContainer({ entity, entityType = "user" }) {
   };
 
   const onTyping = (val) => {
-    socket.emit("typing", { userId: selectedUser?.id, typing: val });
+    socket.emit("typing", { userId: entity?.id, typing: val });
   };
 
   return (
-    <div className="flex-1 min-w-0 flex flex-col bg-base-100">
-      <div className="border-b p-4 flex items-center gap-3">
-        <div className="font-semibold">
-          {selectedUser ? selectedUser.title : "Select a chat"}
+    <div className="w-[760px] min-w-[760px] flex flex-col bg-base-100 h-full">
+      <div className="border-b p-4 flex items-center justify-between gap-3">
+        <div>
+          <div className="text-sm text-base-content/60">
+            {isAgent ? "Agent" : "Friends"}
+          </div>
+          <div className="font-semibold text-lg">
+            {entity?.title || "Conversation"}
+          </div>
         </div>
+        <div className="text-sm text-base-content/60">{entity?.role || ""}</div>
       </div>
 
       <div className="flex-1 overflow-auto p-4 space-y-4">

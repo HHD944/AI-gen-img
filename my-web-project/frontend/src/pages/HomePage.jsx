@@ -4,6 +4,7 @@ import ChatContainer from "../components/ChatContainer.jsx";
 import NoChatSelected from "../components/NoChatSelected.jsx";
 import { useAuthStore } from "../store/userAuthStore.js";
 import AgentsSidebar from "../components/AgentsSidebar.jsx";
+import { useAgentsStore } from "../store/useAgentsStore.js";
 
 import {
   Smile,
@@ -16,57 +17,64 @@ import {
 } from "lucide-react";
 import { useChatStore } from "../store/useChatStore.js";
 import Navbar from "../components/Navbar.jsx";
-const friendsList = [
-  { id: 1, name: "Alice", avatar: "https://ui-avatars.com/api/?name=Alice" },
-  { id: 2, name: "Bob", avatar: "https://ui-avatars.com/api/?name=Bob" },
-  {
-    id: 3,
-    name: "Charlie",
-    avatar: "https://ui-avatars.com/api/?name=Charlie",
-  },
-];
 
-const initialMessages = [
-  { id: 1, fromMe: false, text: "Hi there! 👋" },
-  { id: 2, fromMe: true, text: "Hello! How are you?" },
-];
-
-const HomePage = () => {
-  const { selectedUser, setSelectedUser } = useChatStore();
-  const { selectedAgent, setSelectedAgent } = useChatStore();
-
-  const [selectedFriend, setSelectedFriend] = useState(friendsList[0]);
-  const [messages, setMessages] = useState(initialMessages);
-  const [input, setInput] = useState("");
-  const messagesEndRef = useRef(null);
+export default function HomePage() {
+  const { selectedUser } = useChatStore();
+  const { selectedAgent, getAgents } = useAgentsStore();
   const { authUser } = useAuthStore();
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, selectedFriend]);
 
-  const handleSend = (e) => {
-    e.preventDefault();
-    if (input.trim()) {
-      setMessages([...messages, { id: Date.now(), fromMe: true, text: input }]);
-      setInput("");
-    }
-  };
+  useEffect(() => {
+    getAgents();
+  }, [getAgents]);
+
+  useEffect(() => {
+    if (selectedUser)
+      useAgentsStore.setState({ selectedAgent: null, messages: [] });
+  }, [selectedUser]);
+
+  useEffect(() => {
+    if (selectedAgent)
+      useChatStore.setState({ selectedUser: null, messages: [] });
+  }, [selectedAgent]);
+
+  const selectedEntity = selectedUser || selectedAgent;
+  const entityType = selectedAgent && !selectedUser ? "agent" : "user";
+
+  // tính toán tổng width: w-80 (320px) + w-[760px] + w-72 (288px) = 1368px
+  const totalWidth = 320 + 760 + 288;
 
   return (
     <div className="h-screen bg-base-200">
-      {/* fixed panel: căn giữa theo ngang, cách top bằng 5rem (pt-20 trước đó) */}
-      <div className="fixed left-1/2 top-20 z-10 w-full max-w-6xl transform -translate-x-1/2 h-[calc(100vh-8rem)] px-4">
+      <div
+        className="fixed left-1/2 top-20 z-10 transform -translate-x-1/2 h-[calc(100vh-8rem)] box-border"
+        style={{ width: `${totalWidth + 50}px` }}
+      >
         <div className="bg-base-100 rounded-lg shadow-cl h-full overflow-hidden">
           <div className="flex h-full">
-            <Sidebar />
-            {!selectedUser ? <NoChatSelected /> : <ChatContainer />}
-            <AgentsSidebar />
+            {/* left: Friends sidebar (fixed width) */}
+            <div className="w-full border-r h-full overflow-auto">
+              <Sidebar />
+            </div>
+
+            {/* center: fixed chat container */}
+            <div className="w-[760px] h-full">
+              {!selectedEntity ? (
+                <NoChatSelected />
+              ) : (
+                <ChatContainer
+                  entity={selectedEntity}
+                  entityType={entityType}
+                />
+              )}
+            </div>
+
+            {/* right: Agents sidebar (fixed width) */}
+            <div className="w-full border-l h-full overflow-auto">
+              <AgentsSidebar />
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
-};
-
-export default HomePage;
+}
