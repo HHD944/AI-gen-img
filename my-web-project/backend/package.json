@@ -24,6 +24,7 @@
     "socket.io": "^4.8.1"
   },
   "devDependencies": {
+    "@gradio/client": "^2.0.0",
     "nodemon": "^3.1.9"
   }
 }

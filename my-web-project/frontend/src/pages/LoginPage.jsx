@@ -4,7 +4,7 @@ import ErrorBoundary from "./ErrorBoundery";
 import { useAuthStore } from "../store/userAuthStore";
 import { Mail } from "lucide-react";
 import toast from "react-hot-toast";
-
+import { Link } from "react-router-dom";
 const LoginPage = () => {
   const [showpassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -194,9 +194,10 @@ const LoginPage = () => {
               >
                 Log In
               </button>
+              <Link to="/signup" className="text-blue-500 hover:underline">
+                Have no account? Sign up here.
+              </Link>
             </form>
-
-            {/* // ...existing code... */}
           </div>
         </div>
       </div>

@@ -7,6 +7,7 @@ import SignUpPage from "./pages/SignUpPage";
 import SettingPage from "./pages/SettingPage";
 import ImageGenerator from "./pages/ImageGenerator";
 import ProfilePage from "./pages/ProfilePage";
+import Forum from "./pages/Forum";
 import { Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
 import { useAuthStore } from "./store/userAuthStore.js";
@@ -48,7 +49,6 @@ const App = () => {
         }}
       />
       <div className="relative z-50">{authUser && <Navbar />}</div>
-
       <Routes>
         <Route
           path="/"
@@ -66,6 +66,14 @@ const App = () => {
         <Route
           path="/profile"
           element={authUser ? <ProfilePage /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/imagegenerator"
+          element={authUser ? <ImageGenerator /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/forum"
+          element={authUser ? <Forum /> : <Navigate to="/login" />}
         />
         <Route
           path="/imagegenerator"

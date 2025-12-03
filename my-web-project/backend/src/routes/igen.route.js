@@ -1,133 +1,141 @@
-// backend/routes/igen.route.js
 import express from "express";
+import { GoogleGenerativeAI } from "@google/generative-ai"; // SỬA: Dùng thư viện đúng
 import axios from "axios";
+import dotenv from "dotenv";
+import { Client } from "@gradio/client";
+dotenv.config();
+
 const router = express.Router();
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN;
+const HF_TOKEN = process.env.HF_TOKEN;
 
-// --- GEMINI: Enhance Prompt ---
+const HF_MODEL_URL =
+  "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3.5-medium";
+if (!GEMINI_API_KEY) {
+  console.error("LỖI: Chưa cấu hình GEMINI_API_KEY trong file .env");
+  process.exit(1);
+}
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+
 const enhancePromptWithGemini = async (userInput) => {
-  const geminiModels = ["gemini-pro", "gemini-1.5-pro", "gemini-1.5-flash"];
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-pro-latest" });
 
-  for (const modelName of geminiModels) {
-    try {
-      const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          contents: [
-            {
-              parts: [
-                {
-                  text: `Convert this to a detailed English image generation prompt (max 80 words):
-"${userInput}"
+    const prompt = `
+      You are an expert prompt engineer for AI Art Generation. 
+      Your task is to convert the user's simple description into a highly detailed, artistic English prompt for Stable Diffusion.
+      
+      Rules:
+      1. Keep it under 50 words.
+      2. Focus on visual details: lighting, style, camera angle, resolution (8k, masterpiece).
+      3. Return ONLY the English prompt text. Do not add explanations.
+      
+      User Input: "${userInput}"
+    `;
 
-Focus on: visual style, lighting, quality. Return ONLY the enhanced prompt.`,
-                },
-              ],
-            },
-          ],
-        },
-        { timeout: 10000 }
-      );
-
-      const text = response.data.candidates[0].content.parts[0].text.trim();
-      console.log(`✓ Gemini (${modelName}) worked`);
-      return text;
-    } catch (error) {
-      console.log(
-        `✗ Gemini ${modelName} failed:`,
-        error.response?.data?.error?.message || error.message
-      );
-      continue;
-    }
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text(); // SỬA: Lấy text đúng cách từ response object
+    return text.trim();
+  } catch (error) {
+    console.error("Gemini Error:", error.message);
+    // Fallback nếu Gemini lỗi
+    return `${userInput}, high quality, 8k, detailed, artistic`;
   }
-
-  // Fallback
-  console.log("Using fallback prompt");
-  return `${userInput}, highly detailed, 8k, professional, cinematic lighting, masterpiece`;
 };
 
-// --- REPLICATE: Generate Image ---
-const generateImageWithReplicate = async (prompt) => {
-  try {
-    console.log("Creating prediction on Replicate...");
+// --- 2. HÀM GỌI STABLE DIFFUSION ĐỂ TẠO ẢNH ---
+// const generateImageFromHF = async (prompt) => {
+//   try {
+//     const response = await axios.post(
+//       HF_MODEL_URL,
+//       { inputs: prompt },
+//       {
+//         headers: {
+//           Authorization: `Bearer ${HF_TOKEN}`,
+//           "Content-Type": "application/json",
+//         },
+//         responseType: "arraybuffer",
+//       }
+//     );
 
-    // Bước 1: Tạo prediction
-    const response = await axios.post(
-      "https://api.replicate.com/v1/predictions",
+//     const base64Image = Buffer.from(response.data, "binary").toString("base64");
+//     return `data:image/jpeg;base64,${base64Image}`;
+//   } catch (error) {
+//     console.error("HuggingFace Error Status:", error.response?.status);
+
+//     // Xử lý lỗi model đang khởi động
+//     if (error.response?.status === 503) {
+//       throw new Error(
+//         "AI Model is warming up (Cold Boot). Please try again in 30 seconds."
+//       );
+//     }
+
+//     // Xử lý lỗi Token
+//     if (error.response?.status === 401) {
+//       throw new Error("Invalid Hugging Face Token (Check .env).");
+//     }
+
+//     // Xử lý lỗi Model bị xóa hoặc tắt API (Lỗi 410 bạn đang gặp)
+//     if (error.response?.status === 404 || error.response?.status === 410) {
+//       throw new Error(
+//         "Model AI này không còn khả dụng hoặc đã bị tắt API. Vui lòng đổi URL model khác."
+//       );
+//     }
+
+//     throw new Error("Failed to generate image from AI provider.");
+//   }
+// };
+
+const generateImageFromHF = async (prompt) => {
+  try {
+    // 1. Kết nối tới Model qua Gradio Client
+    // Thêm hf_token để tránh bị giới hạn rate limit hoặc truy cập private repos
+    const client = await Client.connect(
+      "stabilityai/stable-diffusion-3.5-medium",
       {
-        version:
-          "ac732df83cea7fff18b8472768c88ad041fa750ff7682a21affe81863cbe77e4", // SDXL Lightning
-        input: {
-          prompt: prompt,
-          num_inference_steps: 4,
-          guidance_scale: 0,
-          width: 1024,
-          height: 1024,
-        },
-      },
-      {
-        headers: {
-          Authorization: `Token ${REPLICATE_API_TOKEN}`,
-          "Content-Type": "application/json",
-        },
+        hf_token: HF_TOKEN,
       }
     );
 
-    const predictionId = response.data.id;
-    console.log(`Prediction created: ${predictionId}`);
+    const result = await client.predict("/infer", {
+      prompt: prompt,
+      negative_prompt: "low quality, ugly, distorted",
+      seed: 0,
+      randomize_seed: true,
+      width: 1024,
+      height: 1024,
+      guidance_scale: 7.5, // Mức độ bám sát prompt (thường là 7 -> 10)
+      num_inference_steps: 25, // Tăng lên khoảng 20-30 để ảnh đẹp hơn (1 là quá ít)
+    });
 
-    // Bước 2: Poll để đợi kết quả
-    let prediction = response.data;
-    let attempts = 0;
-    const maxAttempts = 60; // 60 seconds timeout
+    // 3. Xử lý kết quả trả về
+    // Gradio trả về mảng data, phần tử đầu tiên thường là object chứa url ảnh
+    // Cấu trúc thường là: result.data[0] = { url: "https://..." } hoặc trực tiếp là url string
+    const imageResult = result.data[0];
+    const imageUrl = imageResult.url || imageResult;
 
-    while (
-      prediction.status !== "succeeded" &&
-      prediction.status !== "failed" &&
-      attempts < maxAttempts
-    ) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      const statusResponse = await axios.get(
-        `https://api.replicate.com/v1/predictions/${predictionId}`,
-        {
-          headers: {
-            Authorization: `Token ${REPLICATE_API_TOKEN}`,
-          },
-        }
-      );
-
-      prediction = statusResponse.data;
-      attempts++;
-
-      if (attempts % 5 === 0) {
-        console.log(`Status: ${prediction.status} (${attempts}s)`);
-      }
+    if (!imageUrl) {
+      throw new Error("Không nhận được đường dẫn ảnh từ Gradio.");
     }
 
-    if (prediction.status === "succeeded") {
-      console.log("✓ Image generated successfully");
-      return prediction.output[0]; // URL của ảnh
-    } else {
-      throw new Error(`Generation failed: ${prediction.status}`);
-    }
+    // 4. Tải ảnh từ URL về để chuyển sang Base64 (Để khớp với return cũ của bạn)
+    const imageResponse = await fetch(imageUrl);
+    const arrayBuffer = await imageResponse.arrayBuffer();
+    const base64Image = Buffer.from(arrayBuffer).toString("base64");
+
+    return `data:image/jpeg;base64,${base64Image}`;
   } catch (error) {
-    console.error("Replicate Error:", error.response?.data || error.message);
-    throw new Error("Failed to generate image with Replicate");
+    console.error("Gradio/HF Error:", error);
+
+    if (error.message?.includes("Queue")) {
+      throw new Error("Server đang bận (Queue full), vui lòng thử lại sau.");
+    }
+
+    throw new Error("Failed to generate image via Gradio Client.");
   }
 };
-
-// --- FALLBACK: Picsum (Ảnh placeholder) ---
-const generatePlaceholderImage = () => {
-  const width = 1024;
-  const height = 1024;
-  const randomId = Math.floor(Math.random() * 1000);
-  return `https://picsum.photos/seed/${randomId}/${width}/${height}`;
-};
-
-// --- MAIN ROUTE ---
 router.post("/generate-image", async (req, res) => {
   const { prompt } = req.body;
 
@@ -136,93 +144,26 @@ router.post("/generate-image", async (req, res) => {
   }
 
   try {
-    console.log("\n=== IMAGE GENERATION START ===");
-    console.log("Original prompt:", prompt);
+    console.log("--- START GENERATION ---");
+    console.log("1. Original Input:", prompt);
 
-    // Step 1: Enhance with Gemini
     const refinedPrompt = await enhancePromptWithGemini(prompt);
-    console.log("Enhanced prompt:", refinedPrompt);
+    console.log("2. Refined Prompt:", refinedPrompt);
 
-    // Step 2: Generate image
-    let imageUrl;
-
-    if (
-      REPLICATE_API_TOKEN &&
-      REPLICATE_API_TOKEN !== "your_replicate_token_here"
-    ) {
-      try {
-        imageUrl = await generateImageWithReplicate(refinedPrompt);
-      } catch (error) {
-        console.log("Replicate failed, using placeholder");
-        imageUrl = generatePlaceholderImage();
-      }
-    } else {
-      console.log("No Replicate token, using placeholder");
-      imageUrl = generatePlaceholderImage();
-    }
-
-    console.log("✓ Complete\n");
+    const imageUrl = await generateImageFromHF(refinedPrompt);
+    console.log("3. Image Generated Successfully!");
 
     res.json({
-      success: true,
       originalPrompt: prompt,
       refinedPrompt: refinedPrompt,
       imageUrl: imageUrl,
     });
   } catch (error) {
-    console.error("Error:", error.message);
+    console.error("Generation Failed:", error.message);
     res.status(500).json({
-      success: false,
-      error: error.message,
+      error: error.message || "Internal Server Error",
     });
   }
-});
-
-// --- TEST ROUTE ---
-router.get("/test-keys", async (req, res) => {
-  const results = {
-    gemini: { status: "Not configured", working: false },
-    replicate: { status: "Not configured", working: false },
-  };
-
-  // Test Gemini
-  if (GEMINI_API_KEY) {
-    try {
-      await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
-        { contents: [{ parts: [{ text: "test" }] }] },
-        { timeout: 5000 }
-      );
-      results.gemini = { status: "✓ Working", working: true };
-    } catch (error) {
-      results.gemini = {
-        status: "✗ Failed",
-        working: false,
-        error: error.response?.data?.error?.message || error.message,
-      };
-    }
-  }
-
-  if (
-    REPLICATE_API_TOKEN &&
-    REPLICATE_API_TOKEN !== "your_replicate_token_here"
-  ) {
-    try {
-      await axios.get("https://api.replicate.com/v1/models", {
-        headers: { Authorization: `Token ${REPLICATE_API_TOKEN}` },
-        timeout: 5000,
-      });
-      results.replicate = { status: "✓ Working", working: true };
-    } catch (error) {
-      results.replicate = {
-        status: "✗ Failed",
-        working: false,
-        error: error.message,
-      };
-    }
-  }
-
-  res.json(results);
 });
 
 export default router;

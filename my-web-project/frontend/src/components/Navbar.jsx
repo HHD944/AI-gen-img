@@ -74,9 +74,15 @@ const Navbar = () => {
       </div>
 
       <div className="navbar-center flex gap-4">
-        <button className="btn btn-soft">Forum</button>
-        <button className="btn btn-soft btn-info">Chatbox</button>
-        <button className="btn btn-soft btn-success">Post</button>
+        <Link to="/forum">
+          <button className="btn btn-soft">Forum</button>
+        </Link>
+        <Link to="/">
+          <button className="btn btn-soft btn-info">Chatbox</button>
+        </Link>
+        <Link to="/imagegenerator">
+          <button className="btn btn-soft btn-success">Post</button>
+        </Link>
       </div>
 
       <div className="navbar-end">
