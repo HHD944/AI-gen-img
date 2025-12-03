@@ -14,7 +14,7 @@ function Sidebar() {
     return <SidebarSkeleton />;
   }
   return (
-    <aside className="w-80 border-r">
+    <aside className="w-full">
       <div className="p-4">
         <h3 className="font-semibold mb-2">Agents</h3>
         <AgentsChatHistory />

@@ -13,9 +13,7 @@ const io = new Server(server, {
 io.on("connection", (socket) => {
   console.log(`A user connected: ${socket.id}`);
 
-  // Xử lý sự kiện chat cơ bản
   socket.on("chat message", (msg) => {
-    // Có thể lưu vào database tại đây (dùng models)
     io.emit("chat message", msg);
   });
 

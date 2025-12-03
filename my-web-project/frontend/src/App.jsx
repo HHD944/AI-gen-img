@@ -5,6 +5,7 @@ import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import SignUpPage from "./pages/SignUpPage";
 import SettingPage from "./pages/SettingPage";
+import ImageGenerator from "./pages/ImageGenerator";
 import ProfilePage from "./pages/ProfilePage";
 import { Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
@@ -17,6 +18,7 @@ const App = () => {
 
   useEffect(() => {
     checkAuth();
+    document.documentElement.setAttribute("data-theme", "cyberpunk");
   }, [checkAuth]);
   const handleLogout = (e) => {
     e.preventDefault();
@@ -33,7 +35,7 @@ const App = () => {
       </div>
     );
   return (
-    <div data-theme="cyberpunk">
+    <div>
       <Toaster
         position="top-center"
         toastOptions={{
@@ -45,7 +47,7 @@ const App = () => {
           },
         }}
       />
-      {authUser && <Navbar />}
+      <div className="relative z-50">{authUser && <Navbar />}</div>
 
       <Routes>
         <Route
@@ -64,6 +66,10 @@ const App = () => {
         <Route
           path="/profile"
           element={authUser ? <ProfilePage /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/imagegenerator"
+          element={authUser ? <ImageGenerator /> : <Navigate to="/login" />}
         />
       </Routes>
     </div>

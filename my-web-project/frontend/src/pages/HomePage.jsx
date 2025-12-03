@@ -6,17 +6,7 @@ import { useAuthStore } from "../store/userAuthStore.js";
 import AgentsSidebar from "../components/AgentsSidebar.jsx";
 import { useAgentsStore } from "../store/useAgentsStore.js";
 
-import {
-  Smile,
-  Paperclip,
-  Send,
-  Settings,
-  Phone,
-  Video,
-  Mic,
-} from "lucide-react";
 import { useChatStore } from "../store/useChatStore.js";
-import Navbar from "../components/Navbar.jsx";
 
 export default function HomePage() {
   const { selectedUser } = useChatStore();
@@ -40,7 +30,6 @@ export default function HomePage() {
   const selectedEntity = selectedUser || selectedAgent;
   const entityType = selectedAgent && !selectedUser ? "agent" : "user";
 
-  // tính toán tổng width: w-80 (320px) + w-[760px] + w-72 (288px) = 1368px
   const totalWidth = 320 + 760 + 288;
 
   return (
@@ -51,12 +40,10 @@ export default function HomePage() {
       >
         <div className="bg-base-100 rounded-lg shadow-cl h-full overflow-hidden">
           <div className="flex h-full">
-            {/* left: Friends sidebar (fixed width) */}
-            <div className="w-full border-r h-full overflow-auto">
+            <div className="w-full border-r border-base-300 h-full overflow-auto">
               <Sidebar />
             </div>
 
-            {/* center: fixed chat container */}
             <div className="w-[760px] h-full">
               {!selectedEntity ? (
                 <NoChatSelected />
@@ -68,8 +55,7 @@ export default function HomePage() {
               )}
             </div>
 
-            {/* right: Agents sidebar (fixed width) */}
-            <div className="w-full border-l h-full overflow-auto">
+            <div className="w-full border-l border-base-300 h-full overflow-auto">
               <AgentsSidebar />
             </div>
           </div>

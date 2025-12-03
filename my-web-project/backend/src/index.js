@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import authRoutes from "./routes/auth.route.js";
 import messageRoutes from "./routes/message.route.js";
+import imageRoutes from "./routes/igen.route.js";
 import cookieParser from "cookie-parser";
 import { connectDB } from "./lib/db.js";
 import { app, server } from "./lib/socket.js";
@@ -21,8 +22,11 @@ app.use(
 );
 
 app.use("/api/auth", authRoutes);
+app.use("/api/image", imageRoutes);
 app.use("/api/message", messageRoutes);
-
+app.get("/generating", (req, res) => {
+  res.send("AI Art Generator Backend is Running!");
+});
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   connectDB();

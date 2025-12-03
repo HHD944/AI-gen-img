@@ -29,6 +29,8 @@ export const useChatStore = create((set, get) => ({
     },
   ],
   setChats: (chats) => set({ chats }),
+  setMessages: (messages) => set({ messages }),
+
   selectChat: (chatId) => {
     const chat = get().chats.find((c) => c.id === chatId);
     set({ selectedUser: chat });

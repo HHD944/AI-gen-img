@@ -42,28 +42,23 @@ export const useAgentsStore = create((set, get) => ({
   isAgentsLoading: false,
   isMessagesLoading: false,
 
-  // basic setters
   setAgents: (agents) => set({ agents }),
   setMessages: (messages) => set({ messages }),
 
-  // select an agent and load its messages
   selectAgent: (agentId) => {
     const agent = get().agents.find((a) => a.id === agentId) || null;
     set({ selectedAgent: agent, messages: agent?.messages || [] });
   },
 
-  // retrieve agents (keeps signature compatible with chat store)
   getAgents: async () => {
     set({ isAgentsLoading: true });
     try {
-      // currently static list; keep API-compatible for future backend integration
       return get().agents;
     } finally {
       set({ isAgentsLoading: false });
     }
   },
 
-  // get messages for an agent
   getMessages: async (agentId) => {
     set({ isMessagesLoading: true });
     try {
@@ -76,7 +71,6 @@ export const useAgentsStore = create((set, get) => ({
     }
   },
 
-  // append a message to the selected agent (and update lastMessage)
   appendMessageToAgent: (msg) => {
     const agent = get().selectedAgent;
     if (!agent) return;
@@ -96,7 +90,6 @@ export const useAgentsStore = create((set, get) => ({
     });
   },
 
-  // send message to an agent (optimistic local behavior; replace with API/socket as needed)
   sendMessageToAgent: async ({
     agentId,
     text,
@@ -111,7 +104,6 @@ export const useAgentsStore = create((set, get) => ({
       createdAt: new Date().toISOString(),
     };
 
-    // optimistic update
     const updatedAgents = get().agents.map((a) =>
       a.id === agentId
         ? {
@@ -128,11 +120,9 @@ export const useAgentsStore = create((set, get) => ({
       set({ messages: [...(get().messages || []), msg] });
     }
 
-    // placeholder: integrate with backend or socket to get actual agent reply
     return msg;
   },
 
-  // Clear history (reset messages) for one agent
   clearAgentHistory: (agentId) => {
     const updatedAgents = get().agents.map((a) =>
       a.id === agentId
@@ -151,7 +141,6 @@ export const useAgentsStore = create((set, get) => ({
     }
   },
 
-  // Clear history for all agents
   clearAllHistories: () => {
     const cleared = get().agents.map((a) => ({
       ...a,
