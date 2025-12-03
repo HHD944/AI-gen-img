@@ -1,33 +1,29 @@
 import { useState, useEffect } from "react";
-import { Palette, ChevronDown } from "lucide-react"; // Icon
-import { THEMES } from "../constants/themes"; // Import danh sách theme
+import { Palette, ChevronDown } from "lucide-react";
+import { THEMES } from "../constants/themes";
 
 const ThemeSelector = () => {
-  const [theme, setTheme] = useState("cupcake"); // Theme mặc định
+  const [theme, setTheme] = useState("light");
 
-  // Hàm đổi theme và lưu vào HTML
   const applyTheme = (newTheme) => {
     setTheme(newTheme);
     document.documentElement.setAttribute("data-theme", newTheme);
-    localStorage.setItem("chat-theme", newTheme); // (Tùy chọn) Lưu vào bộ nhớ để reload không mất
+    localStorage.setItem("chat-theme", newTheme);
   };
 
-  // Hàm Random theme
   const handleRandom = () => {
     const randomIndex = Math.floor(Math.random() * THEMES.length);
     const randomTheme = THEMES[randomIndex];
     applyTheme(randomTheme);
   };
 
-  // (Tùy chọn) Load theme từ localStorage khi vào web
   useEffect(() => {
-    const savedTheme = localStorage.getItem("chat-theme") || "cupcake";
+    const savedTheme = localStorage.getItem("chat-theme") || "light";
     applyTheme(savedTheme);
   }, []);
 
   return (
     <div className="join">
-      {/* PHẦN 1: Nút Random (Bấm vào là đổi ngay) */}
       <button
         className="btn join-item btn-primary"
         onClick={handleRandom}
@@ -35,10 +31,8 @@ const ThemeSelector = () => {
       >
         <Palette className="w-5 h-5" />
         <span className="hidden md:block">Random Theme</span>{" "}
-        {/* Ẩn chữ trên mobile cho gọn */}
       </button>
 
-      {/* PHẦN 2: Dropdown (Chọn thủ công) */}
       <div className="dropdown dropdown-end join-item">
         <div
           tabIndex={0}
@@ -49,7 +43,6 @@ const ThemeSelector = () => {
           <ChevronDown className="w-5 h-5" />
         </div>
 
-        {/* Danh sách xổ xuống */}
         <ul
           tabIndex={0}
           className="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-52 max-h-96 overflow-y-auto mt-4"
@@ -57,11 +50,10 @@ const ThemeSelector = () => {
           {THEMES.map((t) => (
             <li key={t}>
               <button
-                className={`${t === theme ? "active" : ""}`} // Highlight theme đang chọn
+                className={`${t === theme ? "active" : ""}`}
                 onClick={() => applyTheme(t)}
               >
                 {t.charAt(0).toUpperCase() + t.slice(1)}{" "}
-                {/* Viết hoa chữ cái đầu */}
               </button>
             </li>
           ))}
