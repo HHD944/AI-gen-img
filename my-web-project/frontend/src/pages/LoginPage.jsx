@@ -76,19 +76,21 @@ const LoginPage = () => {
                     Email
                   </span>
                 </label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  placeholder="Enter your email address"
-                  className="input border border-transparent hover:border-info input-info flex-1 min-w-0"
-                  value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
-                  required
-                />
-                <Mail className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <div className="relative flex-1 min-w-0">
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    placeholder="Enter your email address"
+                    className="input border border-transparent hover:border-info input-info w-full pr-10"
+                    value={formData.email}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
+                    required
+                  />
+                  <Mail className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                </div>
               </div>
               <div className="form-control flex flex-row items-center gap-3">
                 <label htmlFor="password" className="label w-32 p-0">
