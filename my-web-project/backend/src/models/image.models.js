@@ -35,3 +35,30 @@ export const ImageAsset =
 export const TrainingJob =
   mongoose.models.TrainingJob ||
   mongoose.model("TrainingJob", TrainingJobSchema);
+
+// Image model aligned with social ERD (separate from ImageAsset uploads)
+const ImageSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
+    storageUrl: {
+      type: String,
+      required: true,
+    },
+    isAI: {
+      type: Boolean,
+      default: false,
+    },
+    prompt: {
+      type: String,
+    },
+  },
+  { timestamps: true }
+);
+
+export const Image =
+  mongoose.models.Image || mongoose.model("Image", ImageSchema);
