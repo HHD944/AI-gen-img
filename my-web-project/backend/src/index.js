@@ -7,6 +7,8 @@ import imageRoutes from "./routes/igen.route.js";
 import cookieParser from "cookie-parser";
 import { connectDB } from "./lib/db.js";
 import { app, server } from "./lib/socket.js";
+import postRoutes from "./routes/post.route.js";
+import path from "path";
 dotenv.config();
 
 const PORT = process.env.PORT;
@@ -21,9 +23,13 @@ app.use(
   })
 );
 
+// Serve saved uploads (gallery files)
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+
 app.use("/api/auth", authRoutes);
 app.use("/api/image", imageRoutes);
 app.use("/api/message", messageRoutes);
+app.use("/api/posts", postRoutes);
 app.get("/generating", (req, res) => {
   res.send("AI Art Generator Backend is Running!");
 });

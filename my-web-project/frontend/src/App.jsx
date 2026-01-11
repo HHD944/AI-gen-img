@@ -14,12 +14,13 @@ import { useAuthStore } from "./store/userAuthStore.js";
 import { Loader } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
+import { ImageGenProvider } from "./context/ImageGenContext"; // Import Provider vừa tạo
 const App = () => {
   const { authUser, checkAuth, isCheckingAuth, logout } = useAuthStore();
 
   useEffect(() => {
     checkAuth();
-    document.documentElement.setAttribute("data-theme", "cyberpunk");
+    document.documentElement.setAttribute("data-theme", "light");
   }, [checkAuth]);
   const handleLogout = (e) => {
     e.preventDefault();
@@ -49,37 +50,35 @@ const App = () => {
         }}
       />
       <div className="relative z-50">{authUser && <Navbar />}</div>
-      <Routes>
-        <Route
-          path="/"
-          element={authUser ? <HomePage /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/login"
-          element={!authUser ? <LoginPage /> : <Navigate to="/" />}
-        />
-        <Route
-          path="/signup"
-          element={!authUser ? <SignUpPage /> : <Navigate to="/" />}
-        />
-        <Route path="/setting" element={<SettingPage />} />
-        <Route
-          path="/profile"
-          element={authUser ? <ProfilePage /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/imagegenerator"
-          element={authUser ? <ImageGenerator /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/forum"
-          element={authUser ? <Forum /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/imagegenerator"
-          element={authUser ? <ImageGenerator /> : <Navigate to="/login" />}
-        />
-      </Routes>
+      <ImageGenProvider>
+        <Routes>
+          <Route
+            path="/"
+            element={authUser ? <HomePage /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/login"
+            element={!authUser ? <LoginPage /> : <Navigate to="/" />}
+          />
+          <Route
+            path="/signup"
+            element={!authUser ? <SignUpPage /> : <Navigate to="/" />}
+          />
+          <Route path="/setting" element={<SettingPage />} />
+          <Route
+            path="/profile"
+            element={authUser ? <ProfilePage /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/imagegenerator"
+            element={authUser ? <ImageGenerator /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/forum"
+            element={authUser ? <Forum /> : <Navigate to="/login" />}
+          />
+        </Routes>
+      </ImageGenProvider>
     </div>
   );
 };
