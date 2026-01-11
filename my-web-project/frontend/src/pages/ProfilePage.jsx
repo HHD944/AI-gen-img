@@ -1,21 +1,23 @@
-import daisyui from "daisyui";
 import { useAuthStore } from "../store/userAuthStore";
 import { useState } from "react";
-import { Camera } from "lucide-react";
+import { Camera, User, Mail, Loader2 } from "lucide-react";
+import toast from "react-hot-toast";
 
 const ProfilePage = () => {
-  const { authUser, isUpdateProfile, updateProfile } = useAuthStore();
+  const { authUser, isUpdateProfile, updateProfile, onlineUsers } =
+    useAuthStore();
 
   const [formData, setFormData] = useState({
     fullName: authUser?.fullName || "",
-    email: authUser?.email || "",
-    authUserPic: authUser?.profilePic || "",
   });
+
+  // Kiểm tra trạng thái Online dựa trên mảng onlineUsers từ socket
+  const isOnline = onlineUsers.includes(authUser?._id);
+
   const handleAvatarChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
-
       reader.readAsDataURL(file);
       reader.onload = async () => {
         const base64Image = reader.result;
@@ -24,24 +26,37 @@ const ProfilePage = () => {
     }
   };
 
+  const handleUpdateName = async (e) => {
+    e.preventDefault();
+    if (!formData.fullName.trim())
+      return toast.error("Full name cannot be empty");
+
+    // Gọi hàm updateProfile từ store để cập nhật tên
+    await updateProfile({ fullName: formData.fullName });
+  };
+
   return (
     <div className="min-h-screen flex items-start justify-center pt-16 bg-base-200 select-none">
-      <form className="max-w-md w-full bg-base-100 p-6 rounded-2xl shadow space-y-6">
+      <div className="max-w-md w-full bg-base-100 p-6 rounded-2xl shadow space-y-6">
+        {/* AVATAR SECTION */}
         <div className="flex flex-col items-center">
           <div className="relative">
             <img
               src={
-                authUser.profilePic || "https://ui-avatars.com/api/?name=User"
+                authUser?.profilePic ||
+                "https://ui-avatars.com/api/?name=" + authUser?.fullName
               }
               alt="Avatar"
-              className="w-24 h-24 rounded-full object-cover border-2 border-info"
+              className="w-24 h-24 rounded-full object-cover border-4 border-base-200"
             />
             <label
               htmlFor="avatar-upload"
-              className="absolute bottom-0 right-0 bg-info p-2 rounded-full cursor-pointer shadow-lg"
+              className={`absolute bottom-0 right-0 bg-primary p-2 rounded-full cursor-pointer shadow-lg hover:scale-105 transition-all ${
+                isUpdateProfile ? "animate-pulse pointer-events-none" : ""
+              }`}
               title="Change avatar"
             >
-              <Camera className="text-white w-3 h-3" />
+              <Camera className="text-white w-4 h-4" />
               <input
                 id="avatar-upload"
                 type="file"
@@ -52,48 +67,90 @@ const ProfilePage = () => {
               />
             </label>
           </div>
-        </div>
-        <div className="space-y-1.5">
-          <div className="text-sm text-zinc-400 flex item-center gap-2">
-            Full Name
-          </div>
-          <p className="px-4 py-2.5 bg-base-200 rounded-lg border ">
-            {authUser?.fullName}
+          <p className="text-sm text-base-content/60 mt-2">
+            {isUpdateProfile
+              ? "Uploading..."
+              : "Click the camera icon to update your photo"}
           </p>
         </div>
-        <div className="space-y-1.5">
-          <div className="text-sm text-zinc-400 flex item-center gap-2">
-            Email
+
+        {/* FORM UPDATE NAME */}
+        <form onSubmit={handleUpdateName} className="space-y-4">
+          <div className="space-y-1.5">
+            <div className="text-sm text-zinc-400 flex items-center gap-2">
+              <User className="w-4 h-4" />
+              Full Name
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                className="input input-bordered flex-1 h-11"
+                value={formData.fullName}
+                onChange={(e) =>
+                  setFormData({ ...formData, fullName: e.target.value })
+                }
+                placeholder="Your full name"
+                disabled={isUpdateProfile}
+              />
+              <button
+                type="submit"
+                className="btn btn-primary btn-sm h-11 px-6"
+                disabled={
+                  isUpdateProfile || formData.fullName === authUser?.fullName
+                }
+              >
+                {isUpdateProfile ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  "Save"
+                )}
+              </button>
+            </div>
           </div>
-          <p className="px-4 py-2.5 bg-base-200 rounded-lg border">
-            {authUser?.email}
-          </p>
-        </div>
+
+          <div className="space-y-1.5">
+            <div className="text-sm text-zinc-400 flex items-center gap-2">
+              <Mail className="w-4 h-4" />
+              Email Address
+            </div>
+            <p className="px-4 py-2.5 bg-base-200 rounded-lg border text-base-content/70">
+              {authUser?.email}
+            </p>
+          </div>
+        </form>
+
+        {/* ACCOUNT INFORMATION */}
         <div className="bg-base-200 rounded-xl p-4 mt-4">
-          <h2 className="font-semibold text-lg mb-2">Account information</h2>
-          <ul className="space-y-2">
-            <li className="flex justify-between">
-              <span className="text-base-content/70">Since:</span>
-              <span className="font-medium  text-green-500">
+          <h2 className="font-semibold text-lg mb-4">Account Information</h2>
+          <div className="space-y-3 text-sm">
+            <div className="flex items-center justify-between py-2 border-b border-base-300">
+              <span className="text-base-content/70">Member Since</span>
+              <span className="font-medium text-primary">
                 {authUser?.createdAt
                   ? new Date(authUser.createdAt).toLocaleDateString()
                   : "N/A"}
               </span>
-            </li>
-            <li className="flex justify-between">
-              <span className="text-base-content/70">Status:</span>
+            </div>
+            <div className="flex items-center justify-between py-2">
+              <span className="text-base-content/70">Account Status</span>
               <span
-                className={`font-medium ${
-                  authUser?.isActive ? "text-green-500" : "text-red-500"
+                className={`flex items-center gap-2 font-medium ${
+                  isOnline ? "text-green-500" : "text-zinc-500"
                 }`}
               >
-                {authUser?.isActive ? "Active" : "Inactive"}
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    isOnline ? "bg-green-500 animate-pulse" : "bg-zinc-500"
+                  }`}
+                ></span>
+                {isOnline ? "Online" : "Offline"}
               </span>
-            </li>
-          </ul>
+            </div>
+          </div>
         </div>
-      </form>
+      </div>
     </div>
   );
 };
+
 export default ProfilePage;

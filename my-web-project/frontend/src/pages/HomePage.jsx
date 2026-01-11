@@ -1,17 +1,20 @@
 import { useState, useRef, useEffect } from "react";
 import Sidebar from "../components/Sidebar.jsx";
 import ChatContainer from "../components/ChatContainer.jsx";
+// import Gallery from "../components/Gallery.jsx";
+import GalleryModal from "../components/GalleryModal.jsx";
 import NoChatSelected from "../components/NoChatSelected.jsx";
 import { useAuthStore } from "../store/userAuthStore.js";
 import AgentsSidebar from "../components/AgentsSidebar.jsx";
 import { useAgentsStore } from "../store/useAgentsStore.js";
-
 import { useChatStore } from "../store/useChatStore.js";
-
+import { Image } from "lucide-react";
+import ChatSettingSidebar from "../components/ChatSettingSidebar.jsx";
 export default function HomePage() {
   const { selectedUser } = useChatStore();
   const { selectedAgent, getAgents } = useAgentsStore();
   const { authUser } = useAuthStore();
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
 
   useEffect(() => {
     getAgents();
@@ -40,23 +43,26 @@ export default function HomePage() {
       >
         <div className="bg-base-100 rounded-lg shadow-cl h-full overflow-hidden">
           <div className="flex h-full">
-            <div className="w-full border-r border-base-300 h-full overflow-auto">
+            {/* Cột 1: Sidebar cũ (Danh sách Agent/Chat) */}
+            <div className="w-[320px] border-r border-base-300 h-full overflow-auto">
               <Sidebar />
             </div>
 
+            {/* Cột 2: Nội dung Chat chính */}
             <div className="w-[760px] h-full">
               {!selectedEntity ? (
                 <NoChatSelected />
               ) : (
                 <ChatContainer
                   entity={selectedEntity}
-                  entityType={entityType}
+                  entityType={selectedAgent && !selectedUser ? "agent" : "user"}
                 />
               )}
             </div>
 
-            <div className="w-full border-l border-base-300 h-full overflow-auto">
-              <AgentsSidebar />
+            {/* Cột 3: Sidebar Setting mới (Bên phải) */}
+            <div className="w-[288px] h-full overflow-hidden">
+              <ChatSettingSidebar />
             </div>
           </div>
         </div>
