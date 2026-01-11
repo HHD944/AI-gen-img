@@ -11,6 +11,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@google-cloud/aiplatform": "^6.0.0",
     "@google/generative-ai": "^0.24.1",
     "axios": "^1.13.2",
     "bcryptjs": "^3.0.2",
@@ -19,12 +20,17 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "form-data": "^4.0.5",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.12.1",
+    "multer": "^2.0.2",
+    "node-fetch": "^3.3.2",
+    "sharp": "^0.34.5",
     "socket.io": "^4.8.1"
   },
   "devDependencies": {
     "@gradio/client": "^2.0.0",
-    "nodemon": "^3.1.9"
+    "nodemon": "^3.1.9",
+    "svelte": "^5.46.1"
   }
 }
