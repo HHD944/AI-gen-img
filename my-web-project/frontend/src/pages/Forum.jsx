@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Heart,
   MessageCircle,
@@ -8,72 +8,51 @@ import {
   Image as ImageIcon,
   Smile,
   User,
+  X,
 } from "lucide-react";
-
-const MOCK_CURRENT_USER = {
-  name: "Bạn (Demo User)",
-  handle: "@me",
-  avatar:
-    "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp",
-};
-
-const MOCK_POSTS = [
-  {
-    id: 1,
-    user: {
-      name: "Nguyễn Văn A",
-      handle: "@nguyenvana",
-      avatar: "",
-    },
-    content:
-      "Giao diện này đã được chỉnh lại độ tương phản (High Contrast). Card sáng hơn nền và có viền rõ ràng. 😎",
-    image: null,
-    likes: 45,
-    comments: 2,
-    time: "30p",
-  },
-  {
-    id: 2,
-    user: {
-      name: "Photography Hub",
-      handle: "@photo_hub",
-      avatar:
-        "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=1000&auto=format&fit=crop",
-    },
-    content:
-      "Hoàng hôn hôm nay tại Đà Lạt. Cảnh sắc tuyệt vời để chữa lành tâm hồn 🌲☁️",
-    image:
-      "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?q=80&w=2070&auto=format&fit=crop",
-    likes: 1240,
-    comments: 89,
-    time: "2h",
-  },
-  {
-    id: 3,
-    user: {
-      name: "Tech Review",
-      handle: "@tech_vn",
-      avatar:
-        "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=1000&auto=format&fit=crop",
-    },
-    content:
-      "AI đang thay đổi cách chúng ta code. Các bạn nghĩ sao về tương lai của Dev?",
-    image:
-      "https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=2070&auto=format&fit=crop",
-    likes: 320,
-    comments: 56,
-    time: "1d",
-  },
-];
+import GalleryModal from "../components/GalleryModal";
+import { usePostStore } from "../store/usePostStore";
+import { useAuthStore } from "../store/userAuthStore";
+import { formatDistanceToNow } from "date-fns";
+import { vi } from "date-fns/locale";
 
 const Forum = () => {
-  const [posts, setPosts] = useState(MOCK_POSTS);
+  const {
+    posts,
+    getPosts,
+    createPost,
+    isPostsLoading,
+    isCreatingPost,
+    likePost,
+  } = usePostStore();
+  const { authUser } = useAuthStore();
+
+  const [content, setContent] = useState("");
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+
+  // Load bài viết khi vào trang
+  useEffect(() => {
+    getPosts();
+  }, [getPosts]);
+
+  const handleSelectImageFromGallery = (image) => {
+    setSelectedImage(image.url);
+    setIsGalleryOpen(false);
+  };
+
+  const handlePostSubmit = async () => {
+    if (!content.trim() && !selectedImage) return;
+    await createPost({ content, image: selectedImage });
+    setContent(""); // Clear input
+    setSelectedImage(null); // Clear image
+  };
 
   const PostItem = ({ post }) => {
-    const [isLiked, setIsLiked] = useState(false);
+    // Kiểm tra xem mình đã like bài này chưa
+    const isLiked = post.likes.includes(authUser?._id);
 
     return (
-      // Card Post
       <div className="card bg-base-100 shadow-2xl border border-base-content/10 mb-6 animate-in fade-in zoom-in duration-300">
         <div className="card-body p-5">
           {/* Header */}
@@ -81,8 +60,8 @@ const Forum = () => {
             <div className="flex gap-3">
               <div className="avatar">
                 <div className="w-10 h-10 rounded-full ring ring-base-300 ring-offset-base-100 ring-offset-1">
-                  {post.user.avatar ? (
-                    <img src={post.user.avatar} alt="avatar" />
+                  {post.user?.profilePic ? (
+                    <img src={post.user.profilePic} alt="avatar" />
                   ) : (
                     <div className="bg-neutral text-neutral-content w-full h-full flex items-center justify-center">
                       <User className="w-6 h-6" />
@@ -93,14 +72,18 @@ const Forum = () => {
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="font-bold text-base hover:underline cursor-pointer">
-                    {post.user.name}
+                    {post.user?.fullName}
                   </h3>
-                  <span className="text-sm text-base-content/60">
-                    • {post.time}
+                  <span className="text-xs text-base-content/60">
+                    •{" "}
+                    {formatDistanceToNow(new Date(post.createdAt), {
+                      addSuffix: true,
+                      locale: vi,
+                    })}
                   </span>
                 </div>
                 <p className="text-sm text-base-content/60">
-                  {post.user.handle}
+                  @{post.user?.username || "user"}
                 </p>
               </div>
             </div>
@@ -121,6 +104,7 @@ const Forum = () => {
                   src={post.image}
                   alt="post content"
                   className="w-full h-auto object-cover max-h-[500px] hover:scale-[1.01] transition-transform duration-500 cursor-pointer"
+                  onClick={() => window.open(post.image, "_blank")}
                 />
               </div>
             )}
@@ -129,32 +113,26 @@ const Forum = () => {
           {/* Footer Actions */}
           <div className="flex items-center gap-6 mt-4 pt-3 border-t border-base-content/10">
             <button
-              className="group flex items-center gap-2 hover:text-red-500 transition-colors"
-              onClick={() => setIsLiked(!isLiked)}
+              className={`group flex items-center gap-2 transition-colors ${
+                isLiked ? "text-red-500" : "hover:text-red-500"
+              }`}
+              onClick={() => likePost(post._id)}
             >
               <Heart
                 className={`w-5 h-5 transition-transform duration-200 ${
-                  isLiked
-                    ? "fill-red-500 text-red-500 scale-110"
-                    : "group-hover:scale-110"
+                  isLiked ? "fill-red-500 scale-110" : "group-hover:scale-110"
                 }`}
               />
-              <span
-                className={`text-sm font-medium ${
-                  isLiked ? "text-red-500" : ""
-                }`}
-              >
-                {post.likes + (isLiked ? 1 : 0)}
+              <span className="text-sm font-medium">
+                {post.likes?.length || 0}
               </span>
             </button>
 
             <button className="group flex items-center gap-2 hover:text-blue-500 transition-colors">
               <MessageCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
-              <span className="text-sm font-medium">{post.comments}</span>
-            </button>
-
-            <button className="group flex items-center gap-2 hover:text-green-500 transition-colors">
-              <Repeat className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
+              <span className="text-sm font-medium">
+                {post.comments?.length || 0}
+              </span>
             </button>
 
             <button className="group flex items-center gap-2 hover:text-primary transition-colors ml-auto">
@@ -167,8 +145,6 @@ const Forum = () => {
   };
 
   return (
-    // THAY ĐỔI: Thêm class 'font-sans'
-    // Điều này sẽ ghi đè font "lỗi" của theme (như Cyberpunk) bằng font hệ thống (Arial/Roboto) hỗ trợ tiếng Việt.
     <div className="min-h-screen bg-base-300 py-6 font-sans">
       <div className="max-w-xl mx-auto px-4">
         {/* INPUT BOX */}
@@ -176,26 +152,60 @@ const Forum = () => {
           <div className="card-body p-4">
             <div className="flex gap-4">
               <div className="avatar">
-                <div className="w-10 h-10 rounded-full">
-                  <img src={MOCK_CURRENT_USER.avatar} alt="my avatar" />
+                <div className="w-10 h-10 rounded-full border">
+                  <img
+                    src={authUser?.profilePic || "/avatar.png"}
+                    alt="my avatar"
+                  />
                 </div>
               </div>
               <div className="flex-1">
                 <textarea
                   className="textarea textarea-ghost w-full p-0 text-base resize-none focus:outline-none focus:bg-transparent h-14 placeholder:text-base-content/40"
-                  placeholder="Hôm nay có gì mới?..."
+                  placeholder="Hôm nay bạn nghĩ gì?"
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
                 ></textarea>
+
+                {/* Preview ảnh nếu có chọn từ gallery */}
+                {selectedImage && (
+                  <div className="relative mt-2 w-24 h-24">
+                    <img
+                      src={selectedImage}
+                      className="w-full h-full object-cover rounded-lg border"
+                    />
+                    <button
+                      onClick={() => setSelectedImage(null)}
+                      className="absolute -top-2 -right-2 btn btn-xs btn-circle btn-error text-white"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                )}
 
                 <div className="flex justify-between items-center pt-2 mt-2 border-t border-base-content/10">
                   <div className="flex gap-1">
-                    <button className="btn btn-ghost btn-sm btn-circle text-base-content/60 hover:text-primary">
-                      <ImageIcon className="w-5 h-5" />
+                    <button
+                      type="button"
+                      onClick={() => setIsGalleryOpen(true)}
+                      className="btn btn-ghost btn-sm btn-circle text-base-content/60"
+                      title="Mở thư viện ảnh"
+                    >
+                      <ImageIcon className="h-5 w-5" />
                     </button>
                     <button className="btn btn-ghost btn-sm btn-circle text-base-content/60 hover:text-warning">
                       <Smile className="w-5 h-5" />
                     </button>
                   </div>
-                  <button className="btn btn-primary btn-sm rounded-full px-6 text-white font-medium shadow-md hover:shadow-lg">
+                  <button
+                    className={`btn btn-primary btn-sm rounded-full px-6 text-white ${
+                      isCreatingPost ? "loading" : ""
+                    }`}
+                    onClick={handlePostSubmit}
+                    disabled={
+                      isCreatingPost || (!content.trim() && !selectedImage)
+                    }
+                  >
                     Đăng
                   </button>
                 </div>
@@ -206,9 +216,19 @@ const Forum = () => {
 
         {/* FEED */}
         <div className="space-y-6">
-          {posts.map((post) => (
-            <PostItem key={post.id} post={post} />
-          ))}
+          {isPostsLoading ? (
+            <div className="flex justify-center py-10">
+              <span className="loading loading-dots loading-lg text-primary"></span>
+            </div>
+          ) : (
+            posts.map((post) => <PostItem key={post._id} post={post} />)
+          )}
+
+          {!isPostsLoading && posts.length === 0 && (
+            <p className="text-center opacity-50 py-10">
+              Chưa có bài viết nào ở đây.
+            </p>
+          )}
 
           <div className="py-10 text-center opacity-50">
             <div className="divider text-xs uppercase tracking-widest font-semibold">
@@ -217,6 +237,12 @@ const Forum = () => {
           </div>
         </div>
       </div>
+
+      <GalleryModal
+        isOpen={isGalleryOpen}
+        onClose={() => setIsGalleryOpen(false)}
+        onImageSelect={handleSelectImageFromGallery}
+      />
     </div>
   );
 };
